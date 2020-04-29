@@ -19,8 +19,8 @@ interface RequestDTO {
 
 class CreateAppointmentService {
   public async execute({
-    provider_id,
     date,
+    provider_id,
   }: RequestDTO): Promise<Appointment> {
     const appointmentsRepository = getCustomRepository(AppointmentsRepository);
 
