@@ -1,32 +1,39 @@
 import { Router } from 'express';
-import { uuid } from 'uuidv4';
-import { startOfHour, parseISO, isEqual } from 'date-fns';
-import Appointment from '../models/Appointment';
+import { parseISO } from 'date-fns';
+
+import { getCustomRepository } from 'typeorm';
+import AppointmentsRepository from '../repositories/AppointmentsRepository';
+import CreateAppointmentService from '../services/CreateAppointmentService';
 
 const appointementsRouter = Router();
 
-const appointments: Appointment[] = [];
+// DTO - Data Transfer Object
 
-appointementsRouter.post('/', (request, response) => {
-  const { provider, date } = request.body;
+appointementsRouter.get('/', async (request, response) => {
+  const appointmentsRepository = getCustomRepository(AppointmentsRepository);
+  const appointments = await appointmentsRepository.find();
 
-  const parseDate = startOfHour(parseISO(date));
+  return response.json(appointments);
+});
 
-  const findAppointmentInSameDate = appointments.find(appointment =>
-    isEqual(parseDate, appointment.date),
-  );
+appointementsRouter.post('/', async (request, response) => {
+  try {
+    const { provider_id, date } = request.body;
 
-  if (findAppointmentInSameDate) {
-    return response
-      .status(400)
-      .json({ message: 'This appointment is already booked' });
+    const parseDate = parseISO(date);
+
+    const createAppointment = new CreateAppointmentService();
+
+    const appointment = await createAppointment.execute({
+      provider_id,
+      date: parseDate,
+    });
+
+    console.log(provider_id);
+    return response.json(appointment);
+  } catch (err) {
+    return response.status(400).json({ error: err.message });
   }
-
-  const appointment = new Appointment(provider, parseDate);
-
-  appointments.push(appointment);
-
-  return response.json(appointment);
 });
 
 export default appointementsRouter;
